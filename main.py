@@ -329,29 +329,29 @@ if __name__ == "__main__":
                      for list_ in cleaned_data if list_.get('customer', None)]
     set_customer_list = list(set(customer_list))  # Уникальные продавцы
     # Если нужно проверить данные на Маркете нужно расскомментировать код ниже
-    # if cleaned_data:
-    #     print("Очищенные данные:")
-    #     count = 0
-    #     for item in cleaned_data:
-    #         count += 1
-    #         print(f'{count}/{len(cleaned_data)}', item['model'])
-    #         item['yandex'] = 'yandex'
-    #         time.sleep(5)
-    #         try:
-    #             driver = create_driver()
-    #             driver.get('https://market.yandex.ru/search?text=' + item['model'])
-    #             div1 = driver.find_element(
-    #             By.XPATH, "//div[@data-auto-themename='listDetailed']")
-    #             span = div1.find_element(By.XPATH, ".//span[@data-auto='snippet-title']")
-    #             item['yandex'] = span.text
-    #         except NoSuchElementException:
-    #             item['yandex'] = None
-    #         finally:
-    #             driver.close()
-    #             driver.quit()
-    #     save_file(file='res.json', data=cleaned_data)
-    # else:
-    #     print("Не удалось прочитать файл или очистить данные.")
+    if cleaned_data:
+        print("Очищенные данные:")
+        count = 0
+        for item in cleaned_data:
+            count += 1
+            print(f'{count}/{len(cleaned_data)}', item['model'])
+            item['yandex'] = 'yandex'
+            time.sleep(5)
+            try:
+                driver = create_driver()
+                driver.get('https://market.yandex.ru/search?text=' + item['model'])
+                div1 = driver.find_element(
+                By.XPATH, "//div[@data-auto-themename='listDetailed']")
+                span = div1.find_element(By.XPATH, ".//span[@data-auto='snippet-title']")
+                item['yandex'] = span.text
+            except NoSuchElementException:
+                item['yandex'] = None
+            finally:
+                driver.close()
+                driver.quit()
+        save_file(file='res.json', data=cleaned_data)
+    else:
+        print("Не удалось прочитать файл или очистить данные.")
     if shop_items_data:
         cleaned_data = open_json_file(file_path='res.json')
         matched_products, unmatched_products = match_products(
