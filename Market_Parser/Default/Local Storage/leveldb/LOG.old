@@ -1,0 +1,9 @@
+2025/01/30-17:37:01.276 3003 Reusing MANIFEST /Users/falsehuman/Projects/tech_2/Market_Parser/Default/Local Storage/leveldb/MANIFEST-000001
+2025/01/30-17:37:01.282 3003 Recovering log #1618
+2025/01/30-17:37:01.285 3003 Level-0 table #1621: started
+2025/01/30-17:37:01.296 3003 Level-0 table #1621: 452205 bytes OK
+2025/01/30-17:37:01.297 3003 Recovering log #1620
+2025/01/30-17:37:01.298 3003 Reusing old log /Users/falsehuman/Projects/tech_2/Market_Parser/Default/Local Storage/leveldb/001620.log 
+2025/01/30-17:37:01.310 3003 Delete type=0 #1618
+2025/01/30-17:37:04.268 520f Level-0 table #1623: started
+2025/01/30-17:37:04.298 520f Level-0 table #1623: 452506 bytes OK
