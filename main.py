@@ -7,6 +7,8 @@ from fuzzywuzzy import fuzz
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from utils import clean_price_data, create_driver
+from itertools import chain
+
 
 
 def translate_color_in_excel(file_path):
@@ -220,15 +222,37 @@ def match_products(device_data_list, database_products):
 
         if best_match:
             data = {**device_data, "matched": True, "db_product": best_match}
-            if matched_products.get(device_data['model'], None) is None:
-                matched_products[device_data['model']] = [data]
+            if matched_products.get(best_match[1], None) is None:
+                matched_products[best_match[1]] = [data]
             else:
-                if data is not matched_products[device_data['model']]:
-                    matched_products[device_data['model']].append(data)
+                if data is not matched_products[best_match[1]]:
+                    matched_products[best_match[1]].append(data)
         else:
             unmatched_products.append({**device_data, "matched": False})
 
     return matched_products, unmatched_products
+
+def get_min_prices(matched_products):
+    """
+    Возвращает список минимальных цен для каждой модели устройства.
+
+    Args:
+        matched_products (list): Список словарей с данными о товарах.
+
+    Returns:
+        list: Список минимальных цен.
+    """
+    
+    prices_by_model = {}
+    for product in matched_products:
+        model = product['customer']
+        price = product['price']
+        if model not in prices_by_model:
+            prices_by_model[model] = price
+        else:
+            prices_by_model[model] = min(prices_by_model[model], price)
+
+    return list(prices_by_model.values())
 
 
 def print_results(matched, unmatched, set_customer_list, matched_file="matched_products.xlsx", output_file="unmatched_products.xlsx"):
@@ -265,21 +289,20 @@ def print_results(matched, unmatched, set_customer_list, matched_file="matched_p
             customer_prices = []
             recommended_prices = [""] * len(set_customer_list)
             if len(product) > 1:
-                min_price = []
+                len_list = len(set_customer_list) - len([price*0.1 for price  in get_min_prices(product)])
+                recommended_prices = [price+(price*0.1) for price  in get_min_prices(product)] + recommended_prices[0:len_list]
                 for customer in set_customer_list:
                     try:
                         index = set_customer_list.index(customer)
-                        # print(product[index])
-                        min_price.append(product[index]['price'])
-                        if min(min_price) not in recommended_prices:
-                            recommended_prices[index] = min(
-                                min_price) + (min(min_price)*0.1)
-                        customer_prices.append(product[index]['customer'])
-                        customer_prices.append(product[index]['price'])
+                        if [product[index]['customer'], product[index]['price']] not in customer_prices:
+                            customer_prices.append([product[index]['customer'], product[index]['price']])
                     except (ValueError, IndexError):
-                        customer_prices.append(' ')
-                        customer_prices.append(' ')
-
+                        customer_prices.append([' ', ' '])
+                customer_prices_ = []
+                for cust_prices in customer_prices:
+                    for i in cust_prices:
+                        customer_prices_.append(i)
+                customer_prices = customer_prices_
             else:
                 product_ = product[0]
                 # print(product_)
@@ -329,31 +352,31 @@ if __name__ == "__main__":
                      for list_ in cleaned_data if list_.get('customer', None)]
     set_customer_list = list(set(customer_list))  # Уникальные продавцы
     # Если нужно проверить данные на Маркете нужно расскомментировать код ниже
-    if cleaned_data:
-        print("Очищенные данные:")
-        count = 0
-        for item in cleaned_data:
-            count += 1
-            print(f'{count}/{len(cleaned_data)}', item['model'])
-            item['yandex'] = 'yandex'
-            time.sleep(5)
-            try:
-                driver = create_driver()
-                driver.get('https://market.yandex.ru/search?text=' + item['model'])
-                div1 = driver.find_element(
-                By.XPATH, "//div[@data-auto-themename='listDetailed']")
-                span = div1.find_element(By.XPATH, ".//span[@data-auto='snippet-title']")
-                item['yandex'] = span.text
-            except NoSuchElementException:
-                item['yandex'] = None
-            finally:
-                driver.close()
-                driver.quit()
-        save_file(file='res.json', data=cleaned_data)
-    else:
-        print("Не удалось прочитать файл или очистить данные.")
+    # if cleaned_data:
+    #     print("Очищенные данные:")
+    #     count = 0
+    #     for item in cleaned_data:
+    #         count += 1
+    #         print(f'{count}/{len(cleaned_data)}', item['model'])
+    #         item['yandex'] = 'yandex'
+    #         time.sleep(5)
+    #         try:
+    #             driver = create_driver()
+    #             driver.get('https://market.yandex.ru/search?text=' + item['model'])
+    #             div1 = driver.find_element(
+    #             By.XPATH, "//div[@data-auto-themename='listDetailed']")
+    #             span = div1.find_element(By.XPATH, ".//span[@data-auto='snippet-title']")
+    #             item['yandex'] = span.text
+    #         except NoSuchElementException:
+    #             item['yandex'] = None
+    #         finally:
+    #             driver.close()
+    #             driver.quit()
+    #     save_file(file='res.json', data=cleaned_data)
+    # else:
+    #     print("Не удалось прочитать файл или очистить данные.")
     if shop_items_data:
-        cleaned_data = open_json_file(file_path='res.json')
+        cleaned_data = open_json_file(file_path='res_example.json')
         matched_products, unmatched_products = match_products(
             cleaned_data, shop_items_data)
         print_results(matched_products, unmatched_products, set_customer_list)
